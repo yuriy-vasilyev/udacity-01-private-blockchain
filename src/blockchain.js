@@ -73,10 +73,14 @@ class Blockchain {
 
 		return new Promise(async (resolve, reject) => {
 			try {
-				block.hash = SHA256(JSON.stringify(block)).toString();
+				await self.validateChain();
+
 				block.previousBlockHash = self._getPreviousHash();
 				block.time = self._generateTimestamp();
 				block.height = self.chain.length;
+
+				// Calculate hash based on the all previous fields
+				block.hash = SHA256(JSON.stringify(block)).toString();
 
 				this.chain.push(block);
 
@@ -157,14 +161,8 @@ class Blockchain {
 	 */
 	getBlockByHash(hash) {
 		const self = this;
-		return new Promise((resolve, reject) => {
-			const match = self.chain.filter((block) => block.hash === hash);
-
-			if (match.length === 0) {
-				reject(`Nothing found by hash: ${hash}`);
-			}
-
-			resolve(match[0]);
+		return new Promise((resolve) => {
+			resolve(self.chain.find((block) => block.hash === hash));
 		});
 	}
 
@@ -233,7 +231,7 @@ class Blockchain {
 					errorLog.push(error);
 				}
 
-				if (block.previousBlockHash !== self.chain[block.height - 1]) {
+				if (block.height !== 0 && block.previousBlockHash !== self.chain[block.height - 1].hash) {
 					errorLog.push(`Block with hash ${block.hash} has invalid previous block reference.`);
 				}
 			}

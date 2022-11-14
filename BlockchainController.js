@@ -9,7 +9,9 @@ class BlockchainController {
 	constructor(app, blockchainObj) {
 		this.app = app;
 		this.blockchain = blockchainObj;
+
 		// All the endpoints methods needs to be called in the constructor to initialize the route.
+		this.validateChain();
 		this.getBlockByHeight();
 		this.requestOwnership();
 		this.submitStar();
@@ -17,7 +19,19 @@ class BlockchainController {
 		this.getStarsByOwner();
 	}
 
-	// Enpoint to Get a Block by Height (GET Endpoint)
+	// Endpoint to validating the chain
+	validateChain() {
+		this.app.get('/validateChain', async (req, res) => {
+			try {
+				await this.blockchain.validateChain();
+				return res.status(200).send('The chain is valid!');
+			} catch (error) {
+				return res.status(500).json({ errors: error });
+			}
+		});
+	}
+
+	// Endpoint to Get a Block by Height (GET Endpoint)
 	getBlockByHeight() {
 		this.app.get('/block/height/:height', async (req, res) => {
 			if (req.params.height) {
@@ -79,12 +93,16 @@ class BlockchainController {
 	getBlockByHash() {
 		this.app.get('/block/hash/:hash', async (req, res) => {
 			if (req.params.hash) {
-				const hash = req.params.hash;
-				let block = await this.blockchain.getBlockByHash(hash);
-				if (block) {
-					return res.status(200).json(block);
-				} else {
-					return res.status(404).send('Block Not Found!');
+				try {
+					const hash = req.params.hash;
+					const block = await this.blockchain.getBlockByHash(hash);
+					if (block) {
+						return res.status(200).json(block);
+					} else {
+						return res.status(404).send('Block Not Found!');
+					}
+				} catch (error) {
+					res.status(500).send(error);
 				}
 			} else {
 				return res.status(404).send('Block Not Found! Review the Parameters!');
